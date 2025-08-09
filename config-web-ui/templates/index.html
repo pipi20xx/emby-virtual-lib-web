@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emby Virtual Lib 配置面板</title>
+    <style>
+        /* --- 样式部分保持不变，因此省略以保持简洁 --- */
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --warning-color: #ffc107;
+            --body-bg: #f4f7f9;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition-speed: 0.3s;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+            margin: 0; padding: 2em 1em; background-color: var(--body-bg);
+        }
+        .container { max-width: 900px; margin: auto; background: white; padding: 2.5em; border-radius: var(--border-radius); box-shadow: var(--box-shadow); }
+        h1, h2 { border-bottom: 1px solid #eee; padding-bottom: 0.5em; margin-bottom: 1.5em; }
+        h1 { margin-top: 0; }
+        h2 { margin-top: 2em; }
+        hr { border: none; border-top: 1px solid #eee; margin: 2.5em 0; }
+        label { display: block; margin-bottom: 0.5em; font-weight: 600; }
+        input[type="text"], select { width: 100%; padding: 0.75em; border: 1px solid #dee2e6; border-radius: 6px; box-sizing: border-box; background-color: #fff; }
+        input[type="text"]:focus, select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); }
+        select:disabled { background-color: #e9ecef; cursor: not-allowed; }
+        .btn { padding: 0.7em 1.5em; border: 1px solid transparent; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all var(--transition-speed) ease; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-submit { background-color: var(--primary-color); color: white; }
+        .btn-add { background-color: var(--success-color); color: white; margin-top: 1.5em;}
+        .fetch-container { display: flex; gap: 1em; align-items: flex-end; }
+        .fetch-container .form-group { flex-grow: 1; margin-bottom: 0; }
+        .checkbox-group label { display: inline-block; margin-right: 1.5em; font-weight: normal; }
+        #library-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5em; }
+        .card { background: #fff; border: 1px solid #e9ecef; border-radius: var(--border-radius); padding: 1.5em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease; position: relative; }
+        .card:hover { transform: translateY(-5px); box-shadow: var(--box-shadow); }
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1em; }
+        .card-name { font-size: 1.2em; font-weight: 600; color: #343a40; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 1em; }
+        .card-controls { display: flex; align-items: center; gap: 0.5em; }
+        .drag-handle { cursor: grab; font-size: 20px; color: #adb5bd; padding: 5px; }
+        .btn-card-remove { background: none; border: none; cursor: pointer; font-size: 1.5em; color: #adb5bd; line-height: 1; padding: 5px; transition: color 0.2s; }
+        .btn-card-remove:hover { color: var(--danger-color); }
+        .card-body p { margin: 0.5em 0; color: #6c757d; font-size: 0.9em; }
+        .card-type::before { content: "类型: "; font-weight: 600; color: #495057; }
+        .card-id::before { content: "ID: "; font-weight: 600; color: #495057; }
+        .card .form-fields { display: none; }
+        .sortable-ghost { opacity: 0.4; background: #e0f7ff; border: 2px dashed var(--primary-color); }
+        .sortable-chosen { cursor: grabbing; }
+        .card-order-badge { position: absolute; top: -10px; left: -10px; background-color: var(--primary-color); color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .modal { position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity var(--transition-speed) ease; }
+        .modal.is-visible { display: flex; opacity: 1; }
+        .modal-content { background: white; padding: 2.5em; border-radius: var(--border-radius); width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: transform var(--transition-speed) ease; }
+        .modal.is-visible .modal-content { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; margin-bottom: 1.5em; padding-bottom: 1em; }
+        .modal-title { font-size: 1.5em; color: #343a40; margin: 0; }
+        .close-button { font-size: 2em; line-height: 1; cursor: pointer; color: #aaa; border: none; background: none; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 1em; margin-top: 2em; padding-top: 1.5em; border-top: 1px solid #eee; }
+        .form-group { margin-bottom: 1.5em; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        #toast-container { position: fixed; top: 1.5em; right: 1.5em; z-index: 9999; display: flex; flex-direction: column; gap: 1em; width: 350px; }
+        .toast { display: flex; align-items: center; position: relative; padding: 1em 1.5em; border-left: 5px solid; border-radius: var(--border-radius); color: #fff; background-color: #333; box-shadow: 0 5px 15px rgba(0,0,0,0.2); opacity: 0; transform: translateX(120%); animation: toast-in 0.5s forwards; }
+        .toast.toast--success { border-color: var(--success-color); background-color: #3e8e41; }
+        .toast.toast--error { border-color: var(--danger-color); background-color: #c82333; }
+        .toast.toast--warn { border-color: var(--warning-color); background-color: #ffc107; color: #333; }
+        .toast-message { flex-grow: 1; }
+        .toast-close-btn { background: none; border: none; color: inherit; font-size: 1.5em; line-height: 1; cursor: pointer; opacity: 0.7; padding: 0 0 0 1em; }
+        .toast-close-btn:hover { opacity: 1; }
+        @keyframes toast-in { to { opacity: 1; transform: translateX(0); } }
+        .toast.fade-out { animation: toast-out 0.5s forwards; }
+        @keyframes toast-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(120%); } }
+    </style>
+</head>
+<body>
+    <div id="toast-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <script>
+                    // 使用JS在页面加载后创建Toast，避免刷新时重复显示
+                    document.addEventListener('DOMContentLoaded', () => {
+                        showToast('{{ category }}', `{{ message|e }}`);
+                    });
+                </script>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="container">
+        <h1>Emby Virtual Lib 配置面板</h1>
+
+        <form method="post" id="main-form">
+            <h2>基础设置</h2>
+            <!-- *** 恢复：获取数据按钮和相关表单 *** -->
+            <div class="fetch-container">
+                <div class="form-group">
+                    <label for="emby_server">Emby 服务器地址</label>
+                    <input type="text" id="emby_server" name="emby_server" value="{{ config.emby_server or '' }}" placeholder="http://192.168.1.10:8096">
+                </div>
+                <div class="form-group">
+                    <label for="emby_api_key">Emby API Key</label>
+                    <input type="text" id="emby_api_key" name="emby_api_key" value="{{ config.emby_api_key or '' }}">
+                </div>
+                <button type="button" id="fetch-emby-btn" class="btn" style="background-color: var(--info-color); color: white; white-space: nowrap; height: 3.2em;">获取数据</button>
+            </div>
+            
+            <div class="form-group" style="margin-top: 1.5em;">
+                <label for="log_level">日志级别</label>
+                <select id="log_level" name="log_level">
+                    <option value="debug" {% if config.log_level == 'debug' %}selected{% endif %}>debug</option>
+                    <option value="info" {% if config.log_level == 'info' %}selected{% endif %}>info</option>
+                    <option value="warn" {% if config.log_level == 'warn' %}selected{% endif %}>warn</option>
+                    <option value="error" {% if config.log_level == 'error' %}selected{% endif %}>error</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>隐藏媒体库 (可选)</label>
+                <div class="checkbox-group">
+                    {% for value, text in hide_options.items() %}
+                        <label>
+                            <input type="checkbox" name="hide" value="{{ value }}" {% if value in config.hide %}checked{% endif %}>
+                            {{ text }} ({{ value }})
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <hr>
+            
+            <h2>虚拟媒体库列表 (可拖拽排序)</h2>
+            <div id="library-list">
+                 {% for lib in config.library %}
+                <div class="card" onclick="openEditModal(this)">
+                    <div class="card-order-badge">{{ loop.index }}</div>
+                    <div class="card-header">
+                        <span class="card-name">{{ lib.name }}</span>
+                        <div class="card-controls">
+                            <button type="button" class="btn-card-remove" title="移除此库" onclick="removeCard(event, this)">×</button>
+                            <span class="drag-handle" title="拖拽排序">☰</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-type">{{ resource_types[lib.resource_type] or lib.resource_type }}</p>
+                        <p class="card-id">{{ lib.resource_id }}</p>
+                    </div>
+                    <!-- 隐藏的表单字段 -->
+                    <div class="form-fields">
+                        <input type="text" name="lib_name" value="{{ lib.name }}">
+                        <select name="lib_resource_type">
+                            {% for value, text in resource_types.items() %}
+                            <option value="{{ value }}" {% if lib.resource_type == value %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="text" name="lib_resource_id" value="{{ lib.resource_id }}">
+                        <input type="text" name="lib_image" value="{{ lib.image or '' }}">
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-add" onclick="addLibraryEntry()">+ 添加媒体库</button>
+
+            <hr>
+            <button type="submit" class="btn btn-submit">保存所有配置</button>
+        </form>
+    </div>
+
+    <!-- 编辑媒体库的弹窗 -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+             <div class="modal-header">
+                <h3 id="modal-title" class="modal-title">编辑媒体库</h3>
+                <button type="button" class="close-button" onclick="closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>显示名称</label>
+                    <input type="text" id="modal-lib-name" placeholder="例如：所有电影">
+                </div>
+                <div class="form-group">
+                    <label>资源类型</label>
+                    <!-- *** 修改：添加 onchange 事件来触发下拉框更新 *** -->
+                    <select id="modal-lib-resource-type" onchange="updateModalResourceIdDropdown()">
+                        {% for value, text in resource_types.items() %}
+                        <option value="{{ value }}">{{ text }} ({{ value }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>资源 ID</label>
+                    <!-- *** 修改：资源ID输入框变成一个动态容器 *** -->
+                    <div id="modal-resource-id-container">
+                        <!-- JS将在此处生成下拉框或输入框 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>图片路径 (可选)</label>
+                    <input type="text" id="modal-lib-image" placeholder="例如：./images/movie.png">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="removeCardFromModal()">移除</button>
+                <button type="button" class="btn btn-submit" onclick="saveModalChanges()">保存更改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义确认弹窗 -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-body" style="text-align: center; padding: 1em;">
+                <p id="confirm-modal-message" style="font-size: 1.2em; margin: 1em 0 2em 0;">您确定吗？</p>
+                <div class="modal-footer" style="border: none; padding: 0; justify-content: center;">
+                    <button type="button" class="btn btn-secondary" id="confirm-cancel-btn">取消</button>
+                    <button type="button" class="btn btn-danger" id="confirm-ok-btn">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script>
+        // --- 全局变量和初始化 ---
+        const resourceTypesMap = {{ resource_types | tojson }};
+        // *** 恢复：从后端加载的 Emby 数据缓存 ***
+        let embyDataCache = {{ emby_data | tojson }};
+
+        // --- Toast 通知逻辑 ---
+        function showToast(type, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${type}`;
+            toast.innerHTML = `<div class="toast-message">${message}</div><button type="button" class="toast-close-btn">×</button>`;
+            
+            toast.querySelector('.toast-close-btn').addEventListener('click', () => {
+                toast.classList.add('fade-out');
+                toast.addEventListener('animationend', () => toast.remove(), { once: true });
+            });
+            
+            container.appendChild(toast);
+
+            const timer = setTimeout(() => {
+                toast.classList.add('fade-out');
+                toast.addEventListener('animationend', () => toast.remove(), { once: true });
+            }, 5000);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCardOrderNumbers();
+        });
+
+
+        // *** 恢复：获取 Emby 数据的按钮事件 ***
+        document.getElementById('fetch-emby-btn').addEventListener('click', async () => {
+            const serverUrl = document.getElementById('emby_server').value;
+            const apiKey = document.getElementById('emby_api_key').value;
+
+            if (!serverUrl || !apiKey) {
+                showToast('error', '请先填写 Emby 服务器地址和 API Key。');
+                return;
+            }
+            
+            const btn = document.getElementById('fetch-emby-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '正在获取...';
+
+            try {
+                const response = await fetch('/api/fetch_emby_data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emby_server: serverUrl, emby_api_key: apiKey })
+                });
+
+                if (response.ok) {
+                    // 成功后简单地刷新页面，让所有数据和提示都同步
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    showToast('error', `获取数据失败: ${errorData.error || '未知错误'}`);
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            } catch (error) {
+                showToast('error', `请求时发生网络错误: ${error}`);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        
+        // *** 恢复：更新资源ID下拉框的核心功能 ***
+        function updateModalResourceIdDropdown(selectedId = null) {
+            const container = document.getElementById('modal-resource-id-container');
+            const resourceType = document.getElementById('modal-lib-resource-type').value;
+            const items = embyDataCache[resourceType];
+            
+            container.innerHTML = ''; // 清空
+
+            if (items && items.length > 0) {
+                // 有缓存数据，创建下拉框
+                let optionsHtml = items.map(item =>
+                    `<option value="${item.Id}" ${String(item.Id) === String(selectedId) ? 'selected' : ''}>${item.Name} (ID: ${item.Id})</option>`
+                ).join('');
+                container.innerHTML = `<select id="modal-lib-resource-id">${optionsHtml}</select>`;
+            } else {
+                // 无缓存数据，创建文本输入框
+                const valueAttr = selectedId ? `value="${selectedId}"` : 'placeholder="无可用数据，请先获取"';
+                container.innerHTML = `<input type="text" id="modal-lib-resource-id" ${valueAttr}>`;
+            }
+        }
+
+
+        // --- 卡片和弹窗逻辑 (已适配新功能) ---
+        const editModal = document.getElementById('edit-modal');
+        let currentlyEditingCard = null;
+
+        function openEditModal(cardElement) {
+            currentlyEditingCard = cardElement;
+            
+            // 填充弹窗
+            document.getElementById('modal-lib-name').value = cardElement.querySelector('[name=lib_name]').value;
+            document.getElementById('modal-lib-image').value = cardElement.querySelector('[name=lib_image]').value;
+            
+            // *** 修改：先设置类型，再根据类型和ID更新下拉框 ***
+            const resourceTypeSelect = document.getElementById('modal-lib-resource-type');
+            resourceTypeSelect.value = cardElement.querySelector('[name=lib_resource_type]').value;
+            const existingId = cardElement.querySelector('[name=lib_resource_id]').value;
+            updateModalResourceIdDropdown(existingId); // 关键调用
+
+            document.getElementById('modal-title').textContent = '编辑媒体库';
+            editModal.classList.add('is-visible');
+        }
+
+        function closeEditModal() { editModal.classList.remove('is-visible'); currentlyEditingCard = null; }
+
+        function saveModalChanges() {
+            if (!currentlyEditingCard) return;
+
+            // *** 修改：从动态容器中获取资源ID ***
+            const newId = document.getElementById('modal-resource-id-container').firstChild.value;
+            const newName = document.getElementById('modal-lib-name').value;
+            const newType = document.getElementById('modal-lib-resource-type').value;
+            const newImage = document.getElementById('modal-lib-image').value;
+            
+            // 更新隐藏表单
+            currentlyEditingCard.querySelector('[name=lib_name]').value = newName;
+            currentlyEditingCard.querySelector('[name=lib_resource_type]').value = newType;
+            currentlyEditingCard.querySelector('[name=lib_resource_id]').value = newId;
+            currentlyEditingCard.querySelector('[name=lib_image]').value = newImage;
+            
+            // 更新卡片可见文本
+            currentlyEditingCard.querySelector('.card-name').textContent = newName || '(未命名)';
+            currentlyEditingCard.querySelector('.card-type').textContent = resourceTypesMap[newType] || newType;
+            currentlyEditingCard.querySelector('.card-id').textContent = newId;
+
+            closeEditModal();
+        }
+
+        function addLibraryEntry() {
+            // ... (创建卡片HTML)
+            const list = document.getElementById('library-list');
+            const newCard = document.createElement('div');
+            newCard.className = 'card';
+            newCard.setAttribute('onclick', 'openEditModal(this)');
+            let typeOptionsHtml = '';
+            for (const [value, text] of Object.entries(resourceTypesMap)) {
+                typeOptionsHtml += `<option value="${value}">${text}</option>`;
+            }
+            newCard.innerHTML = `
+                <div class="card-order-badge"></div><div class="card-header"><span class="card-name">新媒体库</span><div class="card-controls"><button type="button" class="btn-card-remove" title="移除此库" onclick="removeCard(event, this)">×</button><span class="drag-handle" title="拖拽排序">☰</span></div></div>
+                <div class="card-body"><p class="card-type">collection</p><p class="card-id"></p></div>
+                <div class="form-fields"><input type="text" name="lib_name" value="新媒体库"><select name="lib_resource_type">${typeOptionsHtml}</select><input type="text" name="lib_resource_id" value=""><input type="text" name="lib_image" value=""></div>
+            `;
+            list.appendChild(newCard);
+            
+            openEditModal(newCard); // 打开弹窗进行编辑
+            
+            // *** 修改：为新条目设置默认值并更新下拉框 ***
+            document.getElementById('modal-title').textContent = '创建新媒体库';
+            document.getElementById('modal-lib-resource-type').value = 'collection'; // 默认类型
+            updateModalResourceIdDropdown(); // 初始化下拉框
+
+            updateCardOrderNumbers();
+        }
+
+        // --- 确认弹窗和排序逻辑 (不变) ---
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmMsgEl = document.getElementById('confirm-modal-message');
+        const confirmOkBtn = document.getElementById('confirm-ok-btn');
+        const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+        let onConfirmCallback = null;
+        function showConfirm(message, callback) { onConfirmCallback = callback; confirmMsgEl.textContent = message; confirmModal.classList.add('is-visible'); }
+        function closeConfirm() { confirmModal.classList.remove('is-visible'); onConfirmCallback = null; }
+        confirmOkBtn.addEventListener('click', () => { if (typeof onConfirmCallback === 'function') { onConfirmCallback(); } closeConfirm(); });
+        confirmCancelBtn.addEventListener('click', closeConfirm);
+        function removeCard(event, buttonElement) { event.stopPropagation(); const cardToRemove = buttonElement.closest('.card'); showConfirm('您确定要直接移除这个媒体库吗？', () => { cardToRemove.remove(); updateCardOrderNumbers(); }); }
+        function removeCardFromModal() { if (currentlyEditingCard) { const cardToRemove = currentlyEditingCard; closeEditModal(); showConfirm('您确定要移除这个媒体库吗？', () => { cardToRemove.remove(); updateCardOrderNumbers(); }); } }
+        function updateCardOrderNumbers() { const cards = document.querySelectorAll('#library-list .card'); cards.forEach((card, index) => { const badge = card.querySelector('.card-order-badge'); if (badge) { badge.textContent = index + 1; } }); }
+        const sortableList = document.getElementById('library-list');
+        new Sortable(sortableList, { handle: '.drag-handle', animation: 200, ghostClass: 'sortable-ghost', onEnd: function () { updateCardOrderNumbers(); } });
+    </script>
+</body>
+</html>

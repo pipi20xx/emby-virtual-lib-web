@@ -1,0 +1,24 @@
+# 这是一个只用于运行 config-web-ui 的独立 compose 文件
+
+services:
+  config-web-ui:
+    # 这是您为Web配置项目构建的镜像
+    # build 指令会告诉 docker compose 去 ./config-web-ui 文件夹里找 Dockerfile
+    build: ./config-web-ui
+    
+    # 为容器命名，方便管理
+    container_name: config-web-ui
+    
+    # 端口映射：将您服务器的 8080 端口映射到容器内部的 5000 端口
+    ports:
+      - "8003:5000"
+      
+    # 卷挂载：
+    volumes:
+      # 将主机上的 ./config 目录映射到容器的 /config 目录，用于存放 config.yaml
+      - ./config:/config
+      # 将主机上的 ./images 目录映射到容器中，方便管理图片路径
+      - ./images:/app/images
+      
+    # 设置重启策略
+    restart: unless-stopped
