@@ -40,7 +40,7 @@ services:
   # 服务名称可以任意取，这里我们还叫它 config-web-ui
   config-web-ui:
     # 关键：直接指定您手动构建的本地镜像的名称和标签
-    image: config-web-ui:latest
+    image: pipi20xx/config-web-ui:latest
     
     # 为容器命名，方便管理
     container_name: config-web-ui
@@ -64,7 +64,7 @@ services:
   # emby-virtual-lib 服务
   emby-virtual-lib:
     # 镜像地址
-    image: ekkog/emby-virtual-lib:latest
+    image: ghcr.io/ekkog/emby-virtual-lib:main
     
     # 容器名称
     container_name: emby-virtual-lib
