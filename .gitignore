@@ -1,7 +1,4 @@
-
 # 忽略配置文件和用户上传的图片
 /config/
 /images/
-
-# 忽略本地部署的 docker-compose 文件
 /docker-compose-pro.yml
