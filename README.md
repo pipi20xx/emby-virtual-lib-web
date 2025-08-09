@@ -5,7 +5,6 @@
 
 如果您正在使用 `emby-virtual-lib`，那么这个 Web UI 将帮助您在一个简单直观的网页上完成所有 `config.yaml` 的参数配置，彻底告别手动编辑 YAML 文件的繁琐与易错。
 
-[![Docker Image CI](https://github.com/EkkoG/emby-virtual-lib-web/actions/workflows/docker-image.yml/badge.svg)](https://github.com/EkkoG/emby-virtual-lib-web/actions/workflows/docker-image.yml)
 
 ---
 
@@ -29,21 +28,6 @@
 
 **部署步骤**:
 
-1.  下载本仓库的 `docker-compose-pro.yml` 文件和 `config` 文件夹。
-
-2.  将它们放置在您服务器的任意位置，例如 `/home/user/emby-virtual-lib`。
-
-3.  在 `docker-compose-pro.yml` 文件所在的目录下，执行以下命令启动服务：
-
-    ```bash
-    docker-compose -f docker-compose-pro.yml up -d
-    ```
-
-4.  服务启动后，通过浏览器访问 `http://<你的服务器IP>:8003` 即可打开Web配置界面。
-
-5.  在Web界面中填写您的Emby服务器信息和媒体库配置，点击“保存配置”按钮。程序会自动为您生成 `config/config.yaml` 文件并重启 `emby-virtual-lib` 服务。
-
----
 
 ## 🐳 一键部署文件 (`docker-compose-pro.yml`)
 
@@ -111,22 +95,6 @@ services:
     #   - TZ=Asia/Shanghai
 ```
 
----
-
-## 📁 项目结构说明
-
-```
-.
-├── config/              # 存放 config.yaml 的目录
-│   └── config.yaml
-├── config-web-ui/       # Web UI 服务的源码目录
-│   ├── app.py           # Flask 应用核心逻辑
-│   ├── Dockerfile       # Web UI 的 Dockerfile
-│   ├── requirements.txt # Python 依赖
-│   └── templates/
-│       └── index.html   # 前端页面
-├── images/              # (可选) 存放虚拟媒体库封面
-└── docker-compose-pro.yml # 一键部署的Compose文件
 ```
 
 ---
